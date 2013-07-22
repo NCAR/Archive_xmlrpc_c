@@ -6,6 +6,7 @@
 #include <xmlrpc-c/base.hpp>
 #include <boost/archive/detail/common_iarchive.hpp>
 #include <boost/archive/detail/common_oarchive.hpp>
+#include <boost/archive/detail/register_archive.hpp>
 
 using namespace xmlrpc_c;
 
@@ -257,4 +258,6 @@ private:
     const std::map<std::string, xmlrpc_c::value> _archiveMap;
 };
 
+BOOST_SERIALIZATION_REGISTER_ARCHIVE(Oarchive_xmlrpc_c)
+BOOST_SERIALIZATION_REGISTER_ARCHIVE(Iarchive_xmlrpc_c)
 #endif // ifndef _ARCHIVE_XMLRPC_C_H_
