@@ -8,10 +8,6 @@
 // Verify that we're compiling against Boost 1.42 or later. With Boost 1.41,
 // we can end up with link time errors like this:
 //    undefined reference to `boost::archive::detail::archive_serializer_map<Iarchive_xmlrpc_c>::find(boost::serialization::extended_type_info const&)'
-#include <boost/version.hpp>
-#if BOOST_VERSION < 104200
-#   error "Boost version 1.42 or later is required for the archive_xmlrpc_c tool!"
-#endif
 
 #define BOOST_ARCHIVE_SOURCE
 
