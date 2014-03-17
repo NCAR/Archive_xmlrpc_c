@@ -81,7 +81,7 @@ public:
     template<class T>
     void save_override(const boost::serialization::nvp<T> & pair, BOOST_PFTO int) {
         std::cerr << "Oarchive_xmlrpc_c has no save_override for NVP " <<
-                "with value type '" << typeid(T).name() << "'";
+                "with value type '" << typeid(T).name() << "'" << std::endl;
     }
 
     // bool name-value pair handling
@@ -176,8 +176,8 @@ public:
 //        std::cerr << "Iarchive_xmlrpc_c not loading class_id_optional_type" << std::endl;
     }
     
-    // Extract name-value pairs (nvp) using key/value entries in our XmlRpcValue 
-    // dictionary.
+    // Complain if we don't have a load_override defined for an incoming
+    // name/value pair value type.
     template<class T>
     void load_override(
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
@@ -187,7 +187,7 @@ public:
             BOOST_PFTO int)
     {
         std::cerr << "Iarchive_xmlrpc_c has no load_override for NVP " <<
-                "with value type '" << typeid(T).name() << "'";
+                "with value type '" << typeid(T).name() << "'" << std::endl;
     }
 
     // Loader for name-value pair with bool value.
