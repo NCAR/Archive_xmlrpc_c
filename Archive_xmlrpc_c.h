@@ -94,8 +94,18 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
+    // uint8_t name-value pair handling
+    void save_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
     // uint16_t name-value pair handling
     void save_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // long name-value pair handling
+    void save_override(const boost::serialization::nvp<long> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
@@ -204,6 +214,18 @@ public:
         pair.value() = static_cast<int>(ival);
     }
 
+    // Loader for name-value pair with uint8_t value.
+    void load_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::cerr << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'!" << std::endl;
+            abort();
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<uint8_t>(ival);
+    }
+
     // Loader for name-value pair with uint16_t value.
     void load_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
@@ -214,6 +236,18 @@ public:
         }
         xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
         pair.value() = static_cast<uint16_t>(ival);
+    }
+
+    // Loader for name-value pair with long value.
+    void load_override(const boost::serialization::nvp<long> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::cerr << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'!" << std::endl;
+            abort();
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<long>(ival);
     }
 
     // Loader for name-value pair with double value.
