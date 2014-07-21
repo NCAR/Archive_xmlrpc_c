@@ -81,6 +81,7 @@ public:
     template<class T>
     void save_override(const boost::serialization::nvp<T> & pair, BOOST_PFTO int) {
         std::cerr << "Oarchive_xmlrpc_c has no save_override for NVP " <<
+                "key '" << pair.name() << "' " <<
                 "with value type '" << typeid(T).name() << "'" << std::endl;
     }
 
@@ -92,6 +93,15 @@ public:
     // int name-value pair handling
     void save_override(const boost::serialization::nvp<int> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // unsigned int name-value pair handling
+    void save_override(const boost::serialization::nvp<unsigned int> & pair, BOOST_PFTO int) {
+        // Reinterpret the unsigned value as signed, and save it in that form.
+        // The matching load_override() will change it back to unsigned.
+        unsigned int uval = pair.value();
+        int * ival_p = reinterpret_cast<int *>(&uval);
+        _dict[pair.name()] = xmlrpc_c::value_int(*ival_p);
     }
 
     // uint8_t name-value pair handling
@@ -187,6 +197,7 @@ public:
             BOOST_PFTO int)
     {
         std::cerr << "Iarchive_xmlrpc_c has no load_override for NVP " <<
+                "key '" << pair.name() << "' " <<
                 "with value type '" << typeid(T).name() << "'" << std::endl;
     }
 
@@ -212,6 +223,22 @@ public:
         }
         xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
         pair.value() = static_cast<int>(ival);
+    }
+
+    // Loader for name-value pair with unsigned int value.
+    void load_override(const boost::serialization::nvp<unsigned int> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::cerr << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'!" << std::endl;
+            abort();
+        }
+        // We get the value as a signed int (from the matching save_override()
+        // above), and reinterpret to unsigned int.
+        xmlrpc_c::value_int xml_ival(_archiveMap.find(key)->second);
+        int ival = static_cast<int>(xml_ival);
+        unsigned int * uval_p = reinterpret_cast<unsigned int *>(&ival);
+        pair.value() = *uval_p;
     }
 
     // Loader for name-value pair with uint8_t value.
