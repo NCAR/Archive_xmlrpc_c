@@ -129,6 +129,11 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_double(pair.value());
     }
     
+    // string name-value pair handling
+    void save_override(const boost::serialization::nvp<std::string> & pair, BOOST_PFTO int) {
+        _dict[pair.name()] = xmlrpc_c::value_string(pair.value());
+    }
+    
     // Not sure why we need this, but things won't compile without it...
     template<class T>
     void save(T & t) {
