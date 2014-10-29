@@ -306,6 +306,18 @@ public:
         pair.value() = static_cast<float>(dval);
     }
 
+    // Loader for name-value pair with string value.
+    void load_override(const boost::serialization::nvp<std::string> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::cerr << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'!" << std::endl;
+            abort();
+        }
+        xmlrpc_c::value_string sval(_archiveMap.find(key)->second);
+        pair.value() = static_cast<std::string>(sval);
+    }
+
     // Not sure why we need this, but things won't compile without it...
     template<class T>
     void load(T & t) {
