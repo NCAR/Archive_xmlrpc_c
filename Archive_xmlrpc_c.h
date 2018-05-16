@@ -26,6 +26,7 @@
 #define _ARCHIVE_XMLRPC_C_H_
 
 #include <map>
+#include <iostream>
 #include <xmlrpc-c/base.hpp>
 #include <boost/archive/detail/common_iarchive.hpp>
 #include <boost/archive/detail/common_oarchive.hpp>
