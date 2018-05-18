@@ -5,7 +5,7 @@ import os
 
 tools = Split('''
     boost_serialization
-    xmlrpc_server_abyss++
+    xmlrpc_client++
 ''')
 env = Environment(tools=['default'] + tools)
 
