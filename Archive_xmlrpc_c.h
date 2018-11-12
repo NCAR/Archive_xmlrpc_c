@@ -103,24 +103,24 @@ public:
 //        std::cerr << "Oarchive_xmlrpc_c dropping class_id_optional_type" << std::endl;
     }
 
-    // Default NVP save_override
+    // Template save_override for boost::serialization::nvp<T> (name/value pairs)
     //
-    // If T can be static_cast to/from int, save the value as an integer.
+    // If T can be static_cast to/from int, use that to construct an
+    // xmlrpc_c::value_int and save that in the xmlrpc_c struct/dictionary.
+    // This supports saving enumerated types without adding explicit
+    // save_override implementations for each enumerated type.
+    //
     // Otherwise, complain that we don't have a save_override defined for the
     // incoming name/value pair value type.
-    //
-    // Since enumerated types allow for casting to/from int, this supports
-    // saving enumerated types without adding explicit save_override
-    // implementations for each enum.
     template<class T>
-    void save_override(const boost::serialization::nvp<T> & pair, BOOST_PFTO int version) {
+    void save_override(const boost::serialization::nvp<T> & pair,
+                       BOOST_PFTO int version) {
         const char * key = pair.name();
         try {
             // Attempt a static_cast from type T to int. This will throw an
             // exception if the cast is not allowed.
             int iVal = static_cast<int>(pair.value());
             // Put the integer value into _dict
-            boost::serialization::nvp<int> intNvp(key, iVal);
             _dict[key] = xmlrpc_c::value_int(iVal);
         } catch (std::exception & e) {
             std::ostringstream ss;
@@ -131,17 +131,27 @@ public:
         }
     }
 
-    // bool name-value pair handling
+    // name-value pair handling for bool values
     void save_override(const boost::serialization::nvp<bool> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_boolean(pair.value());
     }
 
-    // int name-value pair handling
+    // name-value pair handling for int values
     void save_override(const boost::serialization::nvp<int> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
-    // uint32_t name-value pair handling
+    // name-value pair handling for uint8_t values
+    void save_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // name-value pair handling for uint16_t values
+    void save_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // name-value pair handling for uint32_t values
     void save_override(const boost::serialization::nvp<uint32_t> & pair, BOOST_PFTO int) {
         // Reinterpret the unsigned value as signed, and save it in that form.
         // The matching load_override() will change it back to unsigned.
@@ -150,17 +160,7 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_int(*ival_p);
     }
 
-    // uint8_t name-value pair handling
-    void save_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
-        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
-    }
-
-    // uint16_t name-value pair handling
-    void save_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
-        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
-    }
-
-    // uint64_t name-value pair handling
+    // name-value pair handling for uint64_t values
     void save_override(const boost::serialization::nvp<uint64_t> & pair, BOOST_PFTO int) {
         // Reinterpret the unsigned value as signed, and save it in that form.
         // The matching load_override() will change it back to unsigned.
@@ -169,22 +169,22 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_i8(*ival_p);
     }
 
-    // long name-value pair handling
+    // name-value pair handling or long values
     void save_override(const boost::serialization::nvp<long> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
-    // double name-value pair handling
+    // name-value pair handling for double values
     void save_override(const boost::serialization::nvp<double> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_double(pair.value());
     }
 
-    // float name-value pair handling
+    // name-value pair handling for float values
     void save_override(const boost::serialization::nvp<float> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_double(pair.value());
     }
 
-    // string name-value pair handling
+    // name-value pair handling for std::string values
     void save_override(const boost::serialization::nvp<std::string> & pair, BOOST_PFTO int) {
         _dict[pair.name()] = xmlrpc_c::value_string(pair.value());
     }
@@ -209,15 +209,15 @@ public:
 //        std::cerr << "Oarchive_xmlrpc_c dropping class_id_optional_type" << std::endl;
     }
 
-    // Default NVP save_override
+    // Template save_override for boost::serialization::nvp<T> (name/value pairs)
     //
-    // If T can be static_cast to/from int, save the value as an integer.
+    // If T can be static_cast to/from int, use that to construct an
+    // xmlrpc_c::value_int and save that in the xmlrpc_c struct/dictionary.
+    // This supports saving enumerated types without adding explicit
+    // save_override implementations for each enumerated type.
+    //
     // Otherwise, complain that we don't have a save_override defined for the
     // incoming name/value pair value type.
-    //
-    // Since enumerated types allow for casting to/from int, this supports
-    // saving enumerated types without adding explicit save_override
-    // implementations for each enum.
     template<class T>
     void save_override(const boost::serialization::nvp<T> & pair) {
         const char * key = pair.name();
@@ -226,7 +226,6 @@ public:
             // exception if the cast is not allowed.
             int iVal = static_cast<int>(pair.value());
             // Put the integer value into _dict
-            boost::serialization::nvp<int> intNvp(key, iVal);
             _dict[key] = xmlrpc_c::value_int(iVal);
         } catch (std::exception & e) {
             std::ostringstream ss;
@@ -237,17 +236,27 @@ public:
         }
     }
 
-    // bool name-value pair handling
+    // name-value pair handling for bool values
     void save_override(const boost::serialization::nvp<bool> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_boolean(pair.value());
     }
 
-    // int name-value pair handling
+    // name-value pair handling for int values
     void save_override(const boost::serialization::nvp<int> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
-    // uint32_t name-value pair handling
+    // name-value pair handling for uint8_t values
+    void save_override(const boost::serialization::nvp<uint8_t> & pair) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // name-value pair handling for uint16_t values
+    void save_override(const boost::serialization::nvp<uint16_t> & pair) {
+        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
+    }
+
+    // name-value pair handling for uint32_t values
     void save_override(const boost::serialization::nvp<uint32_t> & pair) {
         // Reinterpret the unsigned value as signed, and save it in that form.
         // The matching load_override() will change it back to unsigned.
@@ -256,17 +265,7 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_int(*ival_p);
     }
 
-    // uint8_t name-value pair handling
-    void save_override(const boost::serialization::nvp<uint8_t> & pair) {
-        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
-    }
-
-    // uint16_t name-value pair handling
-    void save_override(const boost::serialization::nvp<uint16_t> & pair) {
-        _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
-    }
-
-    // uint64_t name-value pair handling
+    // name-value pair handling for uint64_t values
     void save_override(const boost::serialization::nvp<uint64_t> & pair) {
         // Reinterpret the unsigned value as signed, and save it in that form.
         // The matching load_override() will change it back to unsigned.
@@ -275,22 +274,22 @@ public:
         _dict[pair.name()] = xmlrpc_c::value_i8(*ival_p);
     }
 
-    // long name-value pair handling
+    // name-value pair handling or long values
     void save_override(const boost::serialization::nvp<long> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_int(pair.value());
     }
 
-    // double name-value pair handling
+    // name-value pair handling for double values
     void save_override(const boost::serialization::nvp<double> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_double(pair.value());
     }
 
-    // float name-value pair handling
+    // name-value pair handling for float values
     void save_override(const boost::serialization::nvp<float> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_double(pair.value());
     }
 
-    // string name-value pair handling
+    // name-value pair handling for std::string values
     void save_override(const boost::serialization::nvp<std::string> & pair) {
         _dict[pair.name()] = xmlrpc_c::value_string(pair.value());
     }
@@ -351,15 +350,14 @@ public:
 //        std::cerr << "Iarchive_xmlrpc_c not loading class_id_optional_type" << std::endl;
     }
 
-    // Default NVP load_override
+    // Template load_override for boost::serialization::nvp<T> (name/value pairs)
     //
     // If T can be static_cast to/from int, load the value from an integer.
+    // This supports loading to enumerated types without adding explicit
+    // load_override implementations for each enumerated type.
+    //
     // Otherwise, complain that we don't have a load_override defined for the
     // incoming name/value pair value type.
-    //
-    // Since enumerated types allow for casting to/from int, this supports
-    // loading enumerated types without adding explicit load_override
-    // implementations for each enum.
     template<class T>
     void load_override(
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
@@ -393,7 +391,7 @@ public:
         }
     }
 
-    // Loader for name-value pair with bool value.
+    // Loader for name-value pair with bool value
     void load_override(const boost::serialization::nvp<bool> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -406,7 +404,7 @@ public:
         pair.value() = static_cast<bool>(bval);
     }
 
-    // Loader for name-value pair with int value.
+    // Loader for name-value pair with int value
     void load_override(const boost::serialization::nvp<int> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -419,7 +417,33 @@ public:
         pair.value() = static_cast<int>(ival);
     }
 
-    // Loader for name-value pair with uint32_t value.
+    // Loader for name-value pair with uint8_t value
+    void load_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<uint8_t>(ival);
+    }
+
+    // Loader for name-value pair with uint16_t value
+    void load_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<uint16_t>(ival);
+    }
+
+    // Loader for name-value pair with uint32_t value
     void load_override(const boost::serialization::nvp<uint32_t> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -436,33 +460,7 @@ public:
         pair.value() = *uval_p;
     }
 
-    // Loader for name-value pair with uint8_t value.
-    void load_override(const boost::serialization::nvp<uint8_t> & pair, BOOST_PFTO int) {
-        const char * key = pair.name();
-        if (_archiveMap.find(key) == _archiveMap.end()) {
-            std::ostringstream ss;
-            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                    key << "'";
-            throw(std::runtime_error(ss.str()));
-        }
-        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
-        pair.value() = static_cast<uint8_t>(ival);
-    }
-
-    // Loader for name-value pair with uint16_t value.
-    void load_override(const boost::serialization::nvp<uint16_t> & pair, BOOST_PFTO int) {
-        const char * key = pair.name();
-        if (_archiveMap.find(key) == _archiveMap.end()) {
-            std::ostringstream ss;
-            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                    key << "'";
-            throw(std::runtime_error(ss.str()));
-        }
-        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
-        pair.value() = static_cast<uint16_t>(ival);
-    }
-
-    // Loader for name-value pair with uint64_t value.
+    // Loader for name-value pair with uint64_t value
     void load_override(const boost::serialization::nvp<uint64_t> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -479,7 +477,7 @@ public:
         pair.value() = *uval_p;
     }
 
-    // Loader for name-value pair with long value.
+    // Loader for name-value pair with long value
     void load_override(const boost::serialization::nvp<long> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -492,7 +490,7 @@ public:
         pair.value() = static_cast<long>(ival);
     }
 
-    // Loader for name-value pair with double value.
+    // Loader for name-value pair with double value
     void load_override(const boost::serialization::nvp<double> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -505,7 +503,7 @@ public:
         pair.value() = static_cast<double>(dval);
     }
 
-    // Loader for name-value pair with float value.
+    // Loader for name-value pair with float value
     void load_override(const boost::serialization::nvp<float> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -518,7 +516,7 @@ public:
         pair.value() = static_cast<float>(dval);
     }
 
-    // Loader for name-value pair with string value.
+    // Loader for name-value pair with std::string value
     void load_override(const boost::serialization::nvp<std::string> & pair, BOOST_PFTO int) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -560,15 +558,14 @@ public:
 //        std::cerr << "Iarchive_xmlrpc_c not loading class_id_optional_type" << std::endl;
     }
 
-    // Default NVP load_override
+    // Template load_override for boost::serialization::nvp<T> (name/value pairs)
     //
     // If T can be static_cast to/from int, load the value from an integer.
+    // This supports loading to enumerated types without adding explicit
+    // load_override implementations for each enumerated type.
+    //
     // Otherwise, complain that we don't have a load_override defined for the
     // incoming name/value pair value type.
-    //
-    // Since enumerated types allow for casting to/from int, this supports
-    // loading enumerated types without adding explicit load_override
-    // implementations for each enum.
     template<class T>
     void load_override(const boost::serialization::nvp<T> & pair)
     {
@@ -597,7 +594,7 @@ public:
         }
     }
 
-    // Loader for name-value pair with bool value.
+    // Loader for name-value pair with bool value
     void load_override(const boost::serialization::nvp<bool> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -610,7 +607,7 @@ public:
         pair.value() = static_cast<bool>(bval);
     }
 
-    // Loader for name-value pair with int value.
+    // Loader for name-value pair with int value
     void load_override(const boost::serialization::nvp<int> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -623,7 +620,33 @@ public:
         pair.value() = static_cast<int>(ival);
     }
 
-    // Loader for name-value pair with uint32_t value.
+    // Loader for name-value pair with uint8_t value
+    void load_override(const boost::serialization::nvp<uint8_t> & pair) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<uint8_t>(ival);
+    }
+
+    // Loader for name-value pair with uint16_t value
+    void load_override(const boost::serialization::nvp<uint16_t> & pair) {
+        const char * key = pair.name();
+        if (_archiveMap.find(key) == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                    key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
+        pair.value() = static_cast<uint16_t>(ival);
+    }
+
+    // Loader for name-value pair with uint32_t value
     void load_override(const boost::serialization::nvp<uint32_t> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -640,33 +663,7 @@ public:
         pair.value() = *uval_p;
     }
 
-    // Loader for name-value pair with uint8_t value.
-    void load_override(const boost::serialization::nvp<uint8_t> & pair) {
-        const char * key = pair.name();
-        if (_archiveMap.find(key) == _archiveMap.end()) {
-            std::ostringstream ss;
-            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                    key << "'";
-            throw(std::runtime_error(ss.str()));
-        }
-        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
-        pair.value() = static_cast<uint8_t>(ival);
-    }
-
-    // Loader for name-value pair with uint16_t value.
-    void load_override(const boost::serialization::nvp<uint16_t> & pair) {
-        const char * key = pair.name();
-        if (_archiveMap.find(key) == _archiveMap.end()) {
-            std::ostringstream ss;
-            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                    key << "'";
-            throw(std::runtime_error(ss.str()));
-        }
-        xmlrpc_c::value_int ival(_archiveMap.find(key)->second);
-        pair.value() = static_cast<uint16_t>(ival);
-    }
-
-    // Loader for name-value pair with uint64_t value.
+    // Loader for name-value pair with uint64_t value
     void load_override(const boost::serialization::nvp<uint64_t> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -683,7 +680,7 @@ public:
         pair.value() = *uval_p;
     }
 
-    // Loader for name-value pair with long value.
+    // Loader for name-value pair with long value
     void load_override(const boost::serialization::nvp<long> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -696,7 +693,7 @@ public:
         pair.value() = static_cast<long>(ival);
     }
 
-    // Loader for name-value pair with double value.
+    // Loader for name-value pair with double value
     void load_override(const boost::serialization::nvp<double> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -709,7 +706,7 @@ public:
         pair.value() = static_cast<double>(dval);
     }
 
-    // Loader for name-value pair with float value.
+    // Loader for name-value pair with float value
     void load_override(const boost::serialization::nvp<float> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
@@ -722,7 +719,7 @@ public:
         pair.value() = static_cast<float>(dval);
     }
 
-    // Loader for name-value pair with string value.
+    // Loader for name-value pair with std::string value
     void load_override(const boost::serialization::nvp<std::string> & pair) {
         const char * key = pair.name();
         if (_archiveMap.find(key) == _archiveMap.end()) {
