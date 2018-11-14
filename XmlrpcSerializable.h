@@ -23,9 +23,7 @@ public:
 
     /// @brief Constructor which copies from an instance of T
     /// @param t the instance of type T to copy
-    XmlrpcSerializable(const T & t) : T() {
-        *this = t;
-    }
+    XmlrpcSerializable(const T & t) : T(t) {}
 
     /// @brief Construct from an xmlrpc_c::value (which must be
     /// xmlrpc_c::value_struct)
