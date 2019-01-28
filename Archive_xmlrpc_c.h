@@ -20,20 +20,24 @@
 // ** DISCLAIMER: THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS  
 // ** OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED      
 // ** WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.    
-// *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=* 
-// Boost archive classes to serialize to/from xmlrpc_c::value_struct dictionaries.
+// *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*
+
 #ifndef _ARCHIVE_XMLRPC_C_H_
 #define _ARCHIVE_XMLRPC_C_H_
 
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 #include <xmlrpc-c/base.hpp>
 #include <boost/archive/detail/common_iarchive.hpp>
 #include <boost/archive/detail/common_oarchive.hpp>
 #include <boost/archive/detail/register_archive.hpp>
 
 using namespace xmlrpc_c;
+
+// Template forward reference
+template<typename T> class XmlrpcSerializable;
 
 /// @brief Boost output archive class to populate an xmlrpc_c::value_struct
 /// dictionary
@@ -74,6 +78,7 @@ using namespace xmlrpc_c;
 ///   bool _c;
 /// };
 ///
+
 class Oarchive_xmlrpc_c :
     public boost::archive::detail::common_oarchive<Oarchive_xmlrpc_c> {
 public:
@@ -103,32 +108,40 @@ public:
 //        std::cerr << "Oarchive_xmlrpc_c dropping class_id_optional_type" << std::endl;
     }
 
-    // Template save_override for boost::serialization::nvp<T> (name/value pairs)
-    //
-    // If T can be static_cast to/from int, use that to construct an
-    // xmlrpc_c::value_int and save that in the xmlrpc_c struct/dictionary.
-    // This supports saving enumerated types without adding explicit
-    // save_override implementations for each enumerated type.
-    //
-    // Otherwise, complain that we don't have a save_override defined for the
-    // incoming name/value pair value type.
-    template<class T>
-    void save_override(const boost::serialization::nvp<T> & pair,
-                       BOOST_PFTO int version) {
+    // Template save_override implementation for boost::serialization:nvp<T>
+    // when T is an enumerated type
+    template <typename T>
+    void nvp_save_override(const boost::serialization::nvp<T> & pair,
+                            std::true_type,     // is_enum
+                            std::false_type     // is_class
+                           ) {
         const char * key = pair.name();
-        try {
-            // Attempt a static_cast from type T to int. This will throw an
-            // exception if the cast is not allowed.
-            int iVal = static_cast<int>(pair.value());
-            // Put the integer value into _dict
-            _dict[key] = xmlrpc_c::value_int(iVal);
-        } catch (std::exception & e) {
-            std::ostringstream ss;
-            ss << "Oarchive_xmlrpc_c has no save_override for NVP " <<
-                    "key '" << key << "' " <<
-                    "with value type '" << typeid(T).name() << "'";
-            throw(std::runtime_error(ss.str()));
-        }
+        _dict[key] = xmlrpc_c::value_int(int(pair.value()));
+    }
+
+    // Template save_override implementation for boost::serialization:nvp<T>
+    // when T is a class with a serialize() method
+    template <typename T>
+    void nvp_save_override(const boost::serialization::nvp<T> & pair,
+                            std::false_type,    // is_enum
+                            std::true_type      // is_class
+                           ) {
+        const char * key = pair.name();
+        XmlrpcSerializable<T> sValue(pair.value());
+        _dict[key] = sValue;
+    }
+
+    // Template save_override for boost::serialization::nvp<T>
+    // (name/value pairs)
+    //
+    // This template uses one of the nvp_save_override specializations above,
+    // selected at compile time based on T's type traits
+    template<typename T>
+    void save_override(const boost::serialization::nvp<T> & pair,
+                       BOOST_PFTO int) {
+        // Select implementation at compile time depending on whether T is an
+        // enumerated type or a class
+        nvp_save_override(pair, std::is_enum<T>{}, std::is_class<T>{});
     }
 
     // name-value pair handling for bool values
@@ -209,31 +222,39 @@ public:
 //        std::cerr << "Oarchive_xmlrpc_c dropping class_id_optional_type" << std::endl;
     }
 
-    // Template save_override for boost::serialization::nvp<T> (name/value pairs)
-    //
-    // If T can be static_cast to/from int, use that to construct an
-    // xmlrpc_c::value_int and save that in the xmlrpc_c struct/dictionary.
-    // This supports saving enumerated types without adding explicit
-    // save_override implementations for each enumerated type.
-    //
-    // Otherwise, complain that we don't have a save_override defined for the
-    // incoming name/value pair value type.
-    template<class T>
-    void save_override(const boost::serialization::nvp<T> & pair) {
+    // Template save_override implementation for boost::serialization:nvp<T>
+    // when T is an enumerated type
+    template <typename T>
+    void nvp_save_override(const boost::serialization::nvp<T> & pair,
+                           std::true_type,     // is_enum
+                           std::false_type     // is_class
+                          ) {
         const char * key = pair.name();
-        try {
-            // Attempt a static_cast from type T to int. This will throw an
-            // exception if the cast is not allowed.
-            int iVal = static_cast<int>(pair.value());
-            // Put the integer value into _dict
-            _dict[key] = xmlrpc_c::value_int(iVal);
-        } catch (std::exception & e) {
-            std::ostringstream ss;
-            ss << "Oarchive_xmlrpc_c has no save_override for NVP " <<
-                    "key '" << key << "' " <<
-                    "with value type '" << typeid(T).name() << "'";
-            throw(std::runtime_error(ss.str()));
-        }
+        _dict[key] = xmlrpc_c::value_int(int(pair.value()));
+    }
+
+    // Template save_override implementation for boost::serialization:nvp<T>
+    // when T is a class with a serialize() method
+    template <typename T>
+    void nvp_save_override(const boost::serialization::nvp<T> & pair,
+                           std::false_type,    // is_enum
+                           std::true_type      // is_class
+                          ) {
+        const char * key = pair.name();
+        XmlrpcSerializable<T> sValue(pair.value());
+        _dict[key] = sValue;
+    }
+
+    // Template save_override for boost::serialization::nvp<T>
+    // (name/value pairs)
+    //
+    // This template uses one of the nvp_save_override specializations above,
+    // selected at compile time based on T's type traits
+    template<typename T>
+    void save_override(const boost::serialization::nvp<T> & pair) {
+        // Select implementation at compile time depending on whether T is an
+        // enumerated type or a class
+        nvp_save_override(pair, std::is_enum<T>{}, std::is_class<T>{});
     }
 
     // name-value pair handling for bool values
@@ -318,7 +339,7 @@ public:
     Iarchive_xmlrpc_c(const std::map<std::string, xmlrpc_c::value> & map) :
     	_archiveMap(map) {}
     Iarchive_xmlrpc_c(const xmlrpc_c::value_struct & archive) :
-        _archiveMap(static_cast<const std::map<std::string, xmlrpc_c::value> >(archive)) {}
+        _archiveMap(static_cast<const std::map<std::string, xmlrpc_c::value>>(archive)) {}
 
 #ifdef BOOST_PFTO
     // default processing - kick back to our superclass
@@ -350,14 +371,53 @@ public:
 //        std::cerr << "Iarchive_xmlrpc_c not loading class_id_optional_type" << std::endl;
     }
 
-    // Template load_override for boost::serialization::nvp<T> (name/value pairs)
+    // Template load_override implementation for boost::serialization:nvp<T>
+    // when T is an enumerated type
+    template <typename T>
+    void nvp_load_override(const boost::serialization::nvp<T> & pair,
+                           std::true_type,     // is_enum
+                           std::false_type     // is_class
+                          ) {
+        const char * key = pair.name();
+        auto archiveIter = _archiveMap.find(key);
+        if (archiveIter == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                  key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        // The returned value should be of type xmlrpc_c::value_int. If it
+        // isn't, the value_int cast below will throw an exception
+        int intVal(xmlrpc_c::value_int(archiveIter->second));
+        // Cast the integer value to the enumerated type
+        pair.value() = static_cast<T>(intVal);
+    }
+
+    // Template load_override implementation for boost::serialization:nvp<T>
+    // when T is a class with a serialize() method
+    template <typename T>
+    void nvp_load_override(const boost::serialization::nvp<T> & pair,
+                           std::false_type,    // is_enum
+                           std::true_type      // is_class
+                          ) {
+        const char * key = pair.name();
+        auto archiveIter = _archiveMap.find(key);
+        if (archiveIter == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                  key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value xmlrpcVal = archiveIter->second;
+        XmlrpcSerializable<T> sValue(pair.value());
+        pair.value() = sValue;
+    }
+
+    // Template load_override for boost::serialization::nvp<T>
+    // (name/value pairs)
     //
-    // If T can be static_cast to/from int, load the value from an integer.
-    // This supports loading to enumerated types without adding explicit
-    // load_override implementations for each enumerated type.
-    //
-    // Otherwise, complain that we don't have a load_override defined for the
-    // incoming name/value pair value type.
+    // This template uses one of the nvp_load_override specializations above,
+    // selected at compile time based on T's type traits
     template<class T>
     void load_override(
 #ifndef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
@@ -366,29 +426,9 @@ public:
             boost::serialization::nvp<T> & pair,
             BOOST_PFTO int)
     {
-        const char * key = pair.name();
-        try {
-            if (_archiveMap.find(key) == _archiveMap.end()) {
-                std::ostringstream ss;
-                ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                        key << "'";
-                throw(std::runtime_error(ss.str()));
-            }
-            // Load the T value by casting xmlrpc_c::value_int -> int -> T
-            // This will throw an exception if any of the casts are not allowed.
-            xmlrpc_c::value_int xmlValInt(_archiveMap.find(key)->second);
-            pair.value() = static_cast<T>(static_cast<int>(xmlValInt));
-        } catch (std::runtime_error & e) {
-            // Rethrow 'dictionary does not contain requested key' exception
-            // from above
-            throw;
-        } catch (std::exception & e) {
-            std::ostringstream ss;
-            ss << "Iarchive_xmlrpc_c has no load_override for NVP " <<
-                    "key '" << key << "' " <<
-                    "with value type '" << typeid(T).name() << "'";
-            throw(std::runtime_error(ss.str()));
-        }
+        // Select implementation at compile time depending on whether T is an
+        // enumerated type or a class
+        nvp_load_override(pair, std::is_enum<T>{}, std::is_class<T>{});
     }
 
     // Loader for name-value pair with bool value
@@ -528,6 +568,7 @@ public:
         xmlrpc_c::value_string sval(_archiveMap.find(key)->second);
         pair.value() = static_cast<std::string>(sval);
     }
+
 #else
     // default processing - kick back to our superclass
     template<class T>
@@ -558,40 +599,59 @@ public:
 //        std::cerr << "Iarchive_xmlrpc_c not loading class_id_optional_type" << std::endl;
     }
 
-    // Template load_override for boost::serialization::nvp<T> (name/value pairs)
+    // Template load_override implementation for boost::serialization:nvp<T>
+    // when T is an enumerated type
+    template <typename T>
+    void nvp_load_override(const boost::serialization::nvp<T> & pair,
+                           std::true_type,     // is_enum
+                           std::false_type     // is_class
+                          ) {
+        const char * key = pair.name();
+        auto archiveIter = _archiveMap.find(key);
+        if (archiveIter == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                  key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        // The returned value should be of type xmlrpc_c::value_int. If it
+        // isn't, the value_int cast below will throw an exception
+        int intVal(xmlrpc_c::value_int(archiveIter->second));
+        // Cast the integer value to the enumerated type
+        pair.value() = static_cast<T>(intVal);
+    }
+
+    // Template load_override implementation for boost::serialization:nvp<T>
+    // when T is a class with a serialize() method
+    template <typename T>
+    void nvp_load_override(const boost::serialization::nvp<T> & pair,
+                           std::false_type,    // is_enum
+                           std::true_type      // is_class
+                          ) {
+        const char * key = pair.name();
+        auto archiveIter = _archiveMap.find(key);
+        if (archiveIter == _archiveMap.end()) {
+            std::ostringstream ss;
+            ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
+                  key << "'";
+            throw(std::runtime_error(ss.str()));
+        }
+        xmlrpc_c::value xmlrpcVal = archiveIter->second;
+        XmlrpcSerializable<T> sValue(pair.value());
+        pair.value() = sValue;
+    }
+
+    // Template load_override for boost::serialization::nvp<T>
+    // (name/value pairs)
     //
-    // If T can be static_cast to/from int, load the value from an integer.
-    // This supports loading to enumerated types without adding explicit
-    // load_override implementations for each enumerated type.
-    //
-    // Otherwise, complain that we don't have a load_override defined for the
-    // incoming name/value pair value type.
+    // This template uses one of the nvp_load_override specializations above,
+    // selected at compile time based on T's type traits
     template<class T>
     void load_override(const boost::serialization::nvp<T> & pair)
     {
-        const char * key = pair.name();
-        try {
-            if (_archiveMap.find(key) == _archiveMap.end()) {
-                std::ostringstream ss;
-                ss << "xmlrpc_c::value_struct dictionary does not contain requested key '" <<
-                        key << "'";
-                throw(std::runtime_error(ss.str()));
-            }
-            // Load the T value by casting xmlrpc_c::value_int -> int -> T
-            // This will throw an exception if any of the casts are not allowed.
-            xmlrpc_c::value_int xmlValInt(_archiveMap.find(key)->second);
-            pair.value() = static_cast<T>(static_cast<int>(xmlValInt));
-        } catch (std::runtime_error & e) {
-            // Rethrow 'dictionary does not contain requested key' exception
-            // from above
-            throw;
-        } catch (std::exception & e) {
-            std::ostringstream ss;
-            ss << "Iarchive_xmlrpc_c has no load_override for NVP " <<
-                    "key '" << key << "' " <<
-                    "with value type '" << typeid(T).name() << "'";
-            throw(std::runtime_error(ss.str()));
-        }
+        // Select implementation at compile time depending on whether T is an
+        // enumerated type or a class
+        nvp_load_override(pair, std::is_enum<T>{}, std::is_class<T>{});
     }
 
     // Loader for name-value pair with bool value
@@ -751,4 +811,59 @@ private:
 
 BOOST_SERIALIZATION_REGISTER_ARCHIVE(Oarchive_xmlrpc_c)
 BOOST_SERIALIZATION_REGISTER_ARCHIVE(Iarchive_xmlrpc_c)
+
+/// Mix-in class which allows objects of its class to be serialized to/from
+/// Oarchive_xmlrpc_c/Iarchive_xmlrpc_c archives as composite members
+/// of other classes.
+///
+/// Members of this class must provide a boost::serialization serialize()
+/// template method which serializes to/from boost::serialization::nvp
+/// name-value pair representation.
+template<typename T>
+class XmlrpcSerializable : public T {
+public:
+    /// @brief Default constructor
+    XmlrpcSerializable() : T() {}
+
+    /// @brief Constructor which copies from an instance of T
+    /// @param t the instance of type T to copy
+    XmlrpcSerializable(const T & t) : T(t) {}
+
+    /// @brief Construct from an xmlrpc_c::value (which must be
+    /// xmlrpc_c::value_struct)
+    /// @param xmlrpcVal the xmlrpc_c::value holding the content from which
+    /// to construct
+    XmlrpcSerializable(const xmlrpc_c::value & xmlrpcVal) : T() {
+        // Cast the xmlrpc_c::value to xmlrpc_c::value_struct, then from that
+        // to std::map<std::string, xmlrpc_c::value>.
+        xmlrpc_c::value_struct statusStruct(xmlrpcVal);
+        std::map<std::string, xmlrpc_c::value> statusMap(statusStruct);
+
+        // Create an input archiver wrapper around the map and use serialize()
+        // to populate our members from its content.
+        Iarchive_xmlrpc_c iar(statusMap);
+        iar >> *this;
+    }
+
+    virtual ~XmlrpcSerializable() {};
+
+    /// @brief Cast to xmlrpc_c::value
+    operator xmlrpc_c::value() const { return(_toXmlRpcValueStruct()); }
+
+private:
+    /// @brief Return an xmlrpc_c::value containing a struct (dictionary) with
+    /// the object's serialized representation
+    xmlrpc_c::value_struct _toXmlRpcValueStruct() const {
+        std::map<std::string, xmlrpc_c::value> statusMap;
+        // Stuff our content into the statusMap, i.e., _serialize() to an
+        // output archiver wrapped around the statusMap.
+        Oarchive_xmlrpc_c oar(statusMap);
+        oar << *this;
+        // Finally, return a value_struct constructed from the map
+        return(xmlrpc_c::value_struct(statusMap));
+    }
+
+};
+
+
 #endif // ifndef _ARCHIVE_XMLRPC_C_H_
