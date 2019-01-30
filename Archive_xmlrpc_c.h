@@ -409,8 +409,7 @@ public:
             throw(std::runtime_error(ss.str()));
         }
         xmlrpc_c::value xmlrpcVal = archiveIter->second;
-        XmlrpcSerializable<T> sValue(pair.value());
-        pair.value() = sValue;
+        pair.value() = XmlrpcSerializable<T>(xmlrpcVal);
     }
 
     // Template load_override for boost::serialization::nvp<T>
@@ -637,8 +636,7 @@ public:
             throw(std::runtime_error(ss.str()));
         }
         xmlrpc_c::value xmlrpcVal = archiveIter->second;
-        XmlrpcSerializable<T> sValue(pair.value());
-        pair.value() = sValue;
+        pair.value() = XmlrpcSerializable<T>(xmlrpcVal);
     }
 
     // Template load_override for boost::serialization::nvp<T>
