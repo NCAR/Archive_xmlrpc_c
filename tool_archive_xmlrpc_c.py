@@ -21,6 +21,9 @@ sources = Split('''
 
 lib = env.Library('archive_xmlrpc_c', sources)
 Default(lib)
+
+testSerialization = env.Program('testSerialization', ['testSerialization.cpp'])
+Default(testSerialization)
     
 def archive_xmlrpc_c(env):
     env.Require(tools)
