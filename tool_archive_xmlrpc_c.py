@@ -28,6 +28,6 @@ Default(testSerialization)
 def archive_xmlrpc_c(env):
     env.Require(tools)
     env.AppendUnique(CPPPATH = [includeDir])
-    env.AppendUnique(LIBS = [lib])
+    env.Append(LIBS = [lib])
 
 Export('archive_xmlrpc_c')
